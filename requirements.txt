@@ -1,0 +1,5 @@
+python-dotenv
+discord
+regex
+yarl
+httpx
