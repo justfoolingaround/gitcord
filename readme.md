@@ -52,8 +52,6 @@ These are the explanation behind the configurations:
 
 
 <br>
-<br>
-<br>
 
 <h2 align="center">Screenshots</h3>
 
