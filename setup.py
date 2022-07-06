@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 
 with open("./gitcord/__version__.py") as version_py_file:
-     version_raw = version_py_file.read()
+    version_raw = version_py_file.read()
 
 
 with open("requirements.txt") as requirements_file:

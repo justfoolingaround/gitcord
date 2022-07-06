@@ -64,9 +64,7 @@ async def get_codelines(
 
         parsed_end = int(end_line)
         source_line_text = "\n".join(
-            resource[
-                min(parsed_start, parsed_end) - 1 : max(parsed_start, parsed_end)
-            ]
+            resource[min(parsed_start, parsed_end) - 1 : max(parsed_start, parsed_end)]
         )
     else:
         showing_what = f"just line **{start_line}**"

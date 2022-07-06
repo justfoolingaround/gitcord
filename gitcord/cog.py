@@ -1,4 +1,8 @@
+from collections import defaultdict
 from datetime import datetime
+from functools import partial
+from itertools import zip_longest
+from typing import Tuple
 
 import discord
 import httpx
@@ -31,8 +35,12 @@ class GitCord(commands.Cog):
         self.codewrite_download_limit = codewrite_download_limit
         self.codewrite_code_limit = codewrite_code_limit
 
+        self.cached_message_holder = defaultdict(tuple)
+
     @commands.Cog.listener("on_message")
-    async def github_codewrite(self, message: discord.Message):
+    async def github_codewrite(
+        self, message: discord.Message, *, overwriting_messages: Tuple[discord.Message]=()
+    ):
 
         if message.author.bot:
             return
@@ -57,7 +65,16 @@ class GitCord(commands.Cog):
             "type": "rich",
         }
 
-        for match in GITHUB_REPO_REGEX.finditer(message.content):
+        sent_messages = ()
+
+        for match, overwriting_message in zip_longest(
+            GITHUB_REPO_REGEX.finditer(message.content),
+            overwriting_messages,
+            fillvalue=None,
+        ):
+
+            if match is None:
+                continue
 
             codelines = await get_codelines(
                 self.session,
@@ -66,6 +83,7 @@ class GitCord(commands.Cog):
                 download_limit=self.codewrite_download_limit,
                 embed=embed_enabled,
             )
+
 
             if codelines is None:
                 continue
@@ -76,13 +94,51 @@ class GitCord(commands.Cog):
                 embed.description = codelines
                 embed.timestamp = datetime.utcnow()
 
-                await message.channel.send(embed=embed, reference=message)
+                default, overwriter = partial(
+                    message.channel.send, embed=embed, reference=message
+                ), partial(overwriting_message.edit, embed=embed)
 
             else:
-                await message.channel.send(
+
+                default, overwriter = partial(
+                    message.channel.send,
                     codelines,
                     reference=message,
                     allowed_mentions=discord.AllowedMentions(
-                        everyone=False, users=False, roles=False, replied_user=True
+                        everyone=False, users=False, roles=False
                     ),
-                )
+                ), partial(overwriting_message.edit, content=codelines)
+
+            if overwriting_message is not None:
+                try:
+                    sent_messages += (await overwriter(),)
+                except discord.HTTPException:
+                    sent_messages += (await default(),)
+            else:
+                sent_messages += (await default(),)
+
+        if not sent_messages:
+            return
+
+        self.cached_message_holder[message.id] = sent_messages
+
+    @commands.Cog.listener("on_message_delete")
+    async def github_codewrite_delete(self, message: discord.Message):
+        if message.id not in self.cached_message_holder:
+            return
+
+        for sent_message in self.cached_message_holder[message.id]:
+            await sent_message.delete()
+
+        del self.cached_message_holder[message.id]
+
+    @commands.Cog.listener("on_message_edit")
+    async def github_codewrite_edit(
+        self, before: discord.Message, after: discord.Message
+    ):
+        if before.id not in self.cached_message_holder:
+            return await self.github_codewrite(after)
+
+        return await self.github_codewrite(
+            after, overwriting_messages=self.cached_message_holder[before.id]
+        )
