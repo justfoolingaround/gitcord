@@ -8,7 +8,7 @@ import discord
 import httpx
 from discord.ext import commands
 
-from .utils import GITHUB_REPO_REGEX, Ratelimit, get_codelines
+from .utils import GITHUB_REPO_REGEX, Ratelimit, get_codelines, returning_edit_message
 
 
 class GitCord(commands.Cog):
@@ -39,7 +39,10 @@ class GitCord(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def github_codewrite(
-        self, message: discord.Message, *, overwriting_messages: Tuple[discord.Message]=()
+        self,
+        message: discord.Message,
+        *,
+        overwriting_messages: Tuple[discord.Message] = (),
     ):
 
         if message.author.bot:
@@ -84,7 +87,6 @@ class GitCord(commands.Cog):
                 embed=embed_enabled,
             )
 
-
             if codelines is None:
                 continue
 
@@ -94,20 +96,32 @@ class GitCord(commands.Cog):
                 embed.description = codelines
                 embed.timestamp = datetime.utcnow()
 
-                default, overwriter = partial(
-                    message.channel.send, embed=embed, reference=message
-                ), partial(overwriting_message.edit, embed=embed)
+                default, overwriter = (
+                    partial(message.channel.send, embed=embed, reference=message),
+                    partial(
+                        returning_edit_message,
+                        overwriting_message,
+                        embed=embed,
+                    ),
+                )
 
             else:
 
-                default, overwriter = partial(
-                    message.channel.send,
-                    codelines,
-                    reference=message,
-                    allowed_mentions=discord.AllowedMentions(
-                        everyone=False, users=False, roles=False
+                default, overwriter = (
+                    partial(
+                        message.channel.send,
+                        codelines,
+                        reference=message,
+                        allowed_mentions=discord.AllowedMentions(
+                            everyone=False, users=False, roles=False
+                        ),
                     ),
-                ), partial(overwriting_message.edit, content=codelines)
+                    partial(
+                        returning_edit_message,
+                        overwriting_message,
+                        content=codelines,
+                    ),
+                )
 
             if overwriting_message is not None:
                 try:

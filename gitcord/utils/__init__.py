@@ -143,3 +143,8 @@ class Ratelimit:
             return False, ((await task()) if task else None)
 
         return True, None
+
+
+async def returning_edit_message(message, *args, **kwargs):
+    await message.edit(*args, **kwargs)
+    return message
