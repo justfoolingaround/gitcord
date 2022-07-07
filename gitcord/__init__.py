@@ -1,32 +1,29 @@
-import os
-
 import dotenv
 
 from .cog import GitCord
+from .utils import GitCordEnvironmentConfiguration, environment_getter
 
 dotenv.load_dotenv("gitcord.env")
 
-CODEWRITE_RATELIMIT_PER_SECOND = float(os.getenv("CODEWRITE_RATELIMIT_PER_SECOND", 2))
-CODEWRITE_RATELIMIT_EXEMPTIONS = list(
-    (_.strip() for _ in os.getenv("CODEWRITE_RATELIMIT_EXEMPTIONS", "").split(","))
+
+environment_configuration = GitCordEnvironmentConfiguration(
+    ratelimit_per_second=environment_getter(
+        "CODEWRITE_RATELIMIT_PER_SECOND", float, 2.0
+    ),
+    ratelimit_exemptions=environment_getter("CODEWRITE_RATELIMIT_EXEMPTIONS", list, []),
+    ratelimit_exemptions_invert=environment_getter(
+        "CODEWRITE_RATELIMIT_EXEMPTIONS_INVERT", bool, False
+    ),
+    download_limit=environment_getter("CODEWRITE_DOWNLOAD_LIMIT", int, 2 * 1024**2),
+    code_limit=environment_getter("CODEWRITE_EMBED_CODE_LIMIT", int, 500),
+    use_embeds=environment_getter("CODEWRITE_USE_EMBED", bool, True),
 )
-CODEWRITE_RATELIMIT_EXEMPTIONS_INVERT = bool(
-    int(os.getenv("CODEWRITE_RATELIMIT_EXEMPTIONS_INVERT", 0))
-)
-CODEWRITE_DOWNLOAD_LIMIT = int(os.getenv("CODEWRITE_DOWNLOAD_LIMIT", 2 * 1024**2))
-CODEWRITE_CODE_LIMIT = int(os.getenv("CODEWRITE_EMBED_CODE_LIMIT", 500))
-CODEWRITE_USE_EMBED = bool(int(os.getenv("CODEWRITE_USE_EMBED", 1)))
 
 
 def setup(bot):
     bot.add_cog(
         GitCord(
             bot,
-            CODEWRITE_RATELIMIT_PER_SECOND,
-            CODEWRITE_RATELIMIT_EXEMPTIONS,
-            CODEWRITE_RATELIMIT_EXEMPTIONS_INVERT,
-            CODEWRITE_DOWNLOAD_LIMIT,
-            CODEWRITE_CODE_LIMIT,
-            CODEWRITE_USE_EMBED,
+            environment_configuration,
         )
     )

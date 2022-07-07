@@ -1,6 +1,8 @@
+import os
 import re
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 
 import discord
 
@@ -15,6 +17,56 @@ GITHUB_REPO_REGEX = re.compile(
 URL_BASE = "https://raw.githubusercontent.com/{}/{}"
 
 GITHUB_BASE = "https://github.com/"
+
+
+@dataclass
+class GitCordEnvironmentConfiguration:
+
+    ratelimit_per_second: float
+    ratelimit_exemptions: list
+    ratelimit_exemptions_invert: bool
+
+    download_limit: int
+    code_limit: int
+
+    use_embeds: bool
+
+
+boolean_true = ("y", "yes", "true", "on", "enabled", "active")
+boolean_false = ("n", "no", "false", "off", "disabled", "inactive")
+
+
+def environment_getter(key, type_of, default_value, *, env_getter=os.getenv):
+
+    value = env_getter(key)
+
+    if value is None:
+        return default_value
+
+    lowercase_value = value.lower()
+
+    if type_of is bool:
+        if lowercase_value in boolean_true:
+            return True
+
+        if lowercase_value in boolean_false:
+            return False
+
+        if lowercase_value.isdigit():
+            return bool(int(lowercase_value))
+
+        raise ValueError(f"Unable to resolve boolean value from: {value!r}")
+
+    if type_of is int:
+        return int(value)
+
+    if type_of is float:
+        return float(value)
+
+    if type_of is list:
+        return re.split(r"(?<!\\),", value.strip())
+
+    return value
 
 
 async def get_codelines(

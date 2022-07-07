@@ -15,25 +15,18 @@ class GitCord(commands.Cog):
     def __init__(
         self,
         bot,
-        codewrite_ratelimit_per_second=2,
-        codewrite_ratelimit_exemptions=[],
-        codewrite_ratelimit_exemptions_invert=False,
-        codewrite_download_limit=2 * 1024**2,
-        codewrite_code_limit=2500,
-        codewrite_use_embeds=True,
+        environment_configuration,
     ):
         self.bot = bot
         self.session = httpx.AsyncClient(follow_redirects=True)
 
-        self.codewrite_rl_client = Ratelimit(
-            exemptions=codewrite_ratelimit_exemptions,
-            invert_exemptions=codewrite_ratelimit_exemptions_invert,
-            per=codewrite_ratelimit_per_second,
-        )
+        self.configuration = environment_configuration
 
-        self.use_embeds = codewrite_use_embeds
-        self.codewrite_download_limit = codewrite_download_limit
-        self.codewrite_code_limit = codewrite_code_limit
+        self.codewrite_rl_client = Ratelimit(
+            environment_configuration.ratelimit_exemptions,
+            environment_configuration.ratelimit_exemptions_invert,
+            per=environment_configuration.ratelimit_per_second,
+        )
 
         self.cached_message_holder = defaultdict(tuple)
 
@@ -53,7 +46,7 @@ class GitCord(commands.Cog):
         if is_ratelimited:
             return
 
-        embed_enabled = self.use_embeds and (
+        embed_enabled = self.configuration.use_embeds and (
             message.guild is None
             or message.channel.permissions_for(message.guild.me).is_superset(
                 discord.Permissions(1 << 14)
@@ -77,17 +70,26 @@ class GitCord(commands.Cog):
         ):
 
             if match is None:
+                try:
+                    await overwriting_message.delete()
+                except discord.HTTPException:
+                    pass
                 continue
 
             codelines = await get_codelines(
                 self.session,
                 match,
-                size_limit=self.codewrite_code_limit,
-                download_limit=self.codewrite_download_limit,
-                embed=embed_enabled,
+                size_limit=self.configuration.code_limit,
+                download_limit=self.configuration.download_limit,
+                embed=self.configuration.use_embeds,
             )
 
             if codelines is None:
+                if overwriting_message is not None:
+                    try:
+                        await overwriting_message.delete()
+                    except discord.HTTPException:
+                        pass
                 continue
 
             if embed_enabled:

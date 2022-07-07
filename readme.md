@@ -14,6 +14,7 @@
     - [Setting up the code limits on embeds and messages](#setting-up-the-code-limits-on-embeds-and-messages)
     - [Setting up whether to use embeds or raw messages](#setting-up-whether-to-use-embeds-or-raw-messages)
 - [Abuse protection](#abuse-protection)
+- [Automatic message update](#automatic-message-update)
 - [Screenshots](#screenshots)
 
 
@@ -42,7 +43,7 @@ This command is to be executed from the directory where the repository is locate
 
 **Additional information:** You **must** have Python installed **and** in PATH to use this project properly. Your Python executable may be `py` **or** `python` **or** `python3`. 
 
-**Only `discord.py` `1.7.3` and higher versions are supported by the project.**
+**Only `discord.py 1.7.3` is supported by the project.**
 
 ## Usage
 
@@ -65,6 +66,13 @@ bot.load_extension("gitcord")
 bot.run(os.getenv("DISCORD_TOKEN"))
 ```
 
+Additionally, for testing purposes, you can use 
+
+```
+$ py -m gitcord $DISCORD_BOT_TOKEN
+```
+
+
 ## Configurations
 
 The configurations for this project are done at the environment variable level. Effectively speaking, you can save these environment variables at your bot's `.env` **or** create a separate `gitcord.env` to keep your environment variables organised.
@@ -83,7 +91,7 @@ The default value is nothing, making the no one be able to bypass the ratelimit.
 
 ### Setting up the ratelimit exception inverts
 
-You can use `CODEWRITE_RATELIMIT_EXEMPTIONS_INVERT` key to set the invert the ratelimit exception. This supports integer values, `0` means this is `off` and any other integer value means this is set as `on`.
+You can use `CODEWRITE_RATELIMIT_EXEMPTIONS_INVERT` key to set the invert the ratelimit exception. This supports using boolean values such as `true`, `false`, `on`, `off` and so on.
 
 The default value is `off`. 
 
@@ -103,11 +111,12 @@ The default value is `500`, ideally speaking, this'll help your channel clean.
 
 ### Setting up whether to use embeds or raw messages
 
-You can use `CODEWRITE_USE_EMBED` to make the bot use embeds or not. This supports integer values, `0` means this is `off` and any other integer value means this is set as `on`.
+You can use `CODEWRITE_USE_EMBED` to make the bot use embeds or not. This supports using boolean values such as `true`, `false`, `on`, `off` and so on.
+
 
 If embeds permissions are not given to the bot, the bot will automatically use raw messages.
 
-The default value is `1`, this means the bot will use embeds when possible.
+The default value is `on`, this means the bot will use embeds when possible.
 
 ## Abuse protection
 
@@ -129,18 +138,18 @@ The cog will also turn off mentions and use non-embeddable URLs whenever raw mes
 
 The amount of code truncated is shown.
 
+## Automatic Message Update
+
+This project will hold the messages sent by the bot in a cache. This makes it so that:
+
+- If the message is deleted, all associated bot messages will be deleted.
+- If the message is edited, and
+    - github links are added, the bot will send associated messages.
+    - github links are removed, the bot will delete associated messages.
+    - github links are edited, the bot will edit associated messages.
+
+The editing is done via a fallback, this means that if the bot is unable to edit the message, it will send a new one.
+
 ## Screenshots
 
-
-<ul>
-<li><p>With embeds</p>
-
-<p align="center"><img src="https://media.discordapp.net/attachments/925026478591188992/982687393079500940/unknown.png"></p>
-</li>
-<li><p>Without embeds</p>
-
-<p align="center"><img src="https://media.discordapp.net/attachments/925026478591188992/982688033356791838/unknown.png"></p>
-</li>
-</ul>
-
-*Remarks made in above codes are for the sake of screenshot.*
+<center><img src="https://media.discordapp.net/attachments/994448901035786261/994448919222296656/unknown.png"></center>

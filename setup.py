@@ -2,7 +2,6 @@ import re
 
 from setuptools import find_packages, setup
 
-
 with open("./gitcord/__version__.py") as version_py_file:
     version_raw = version_py_file.read()
 
